@@ -1,6 +1,14 @@
-# mod_cluster-dockerhub
-mod_cluster toy dev image offering Apache HTTP Server and mod_cluster smart load balancer built from sources.
-The Dockerfile comprises a smoke test that verifies whether the compiled server starts without segfaults.
+# mod_cluster-dockerhub (jota modification)
+
+Based on [mod_cluster-dockerhub](https://github.com/Karm/mod_cluster-dockerhub) by [Karm](https://github.com/Karm) 
+
+This is my modification of the original repo with my Dockerfile and mod_cluster.conf files. 
+
+Why I created this fork? I intended to:
+
+* Have my own customized Docker image
+* Add an application VirtualHost in mod_cluster.conf configuration, so I can begin using this image with real apps deployed in backend application servers.
+
 
 ## Configuration
 
@@ -16,45 +24,25 @@ The defaults could work in your Docker environment.
 
 ## Example usage
 
-### Test run
+### Build the custom image
 
-    docker pull karm/mod_cluster-master-dockerhub
-    docker run -d -P -i --name mod_cluster karm/mod_cluster-master-dockerhub
-    docker ps
-    +++ snip +++
-    curl 127.0.0.1:49157/mcm
- 
-To debug/inspect, one may use: 
+	docker build -q --rm --tag=mod_cluster_jota .
 
-    docker exec -i -t mod_cluster bash
+### Run the container
 
-### Control configuration using environment variables
-This example show how to run a container with host's network stack, disabled advertisement and moc_cluster-manager available only from localhost.
+You can modify the variables as you need, this is just an example:
 
-    docker run -it --rm --net host --name mod_cluster \
-        -e MODCLUSTER_ADVERTISE=Off \
-        -e MODCLUSTER_NET=192.168. \
-        -e MODCLUSTER_MANAGER_NET=127.0.0.1 \
-        karm/mod_cluster-master-dockerhub
-    curl 127.0.0.1:6666/mcm
+	docker run -it --rm --net host --name mod_cluster-app1 \
+	-e MODCLUSTER_PORT=6666 \
+	-e MODCLUSTER_ADVERTISE=On \
+	-e MODCLUSTER_NET=192.168.1 \
+	-e MODCLUSTER_MANAGER_NET=192.168.1 \
+	mod_cluster_jota
 
-### Use as a base image
-One may base one's own images on this ```karm/mod_cluster-master-dockerhub``` as simply as with creating a ```Dockerfile```:
+Check if it is working:
 
-    FROM karm/mod_cluster-master-dockerhub:latest
-    MAINTAINER Your identity of choice <your email>
-    
-    # Your own configuration located in the same directory as your Dockerfile
-    COPY mod_cluster.conf ${HTTPD_MC_BUILD_DIR}/conf/extra/mod_cluster.conf
+	curl 127.0.0.1:6666/mcm
 
-    # Your own entry point script located in the same directory as your Dockerfile
-    COPY docker-entrypoint.sh /
+To inspect the container use:
 
-    
-Note that ```HTTPD_MC_BUILD_DIR``` as well as other ```ENV ``` constants are propagated to your Dockerfile. 
-
-## Notes
- 
- * 2015-08-31 - control run through environment variables 
- * 2015-06-08 - master branch Docker image updated from Fedora 20 to Fedora 22. Enjoy! 
- * 2015-05-07 - [mod_cluster 1.3.1.Final released](https://developer.jboss.org/wiki/ModclusterVersion131FinalReleased), Includes a fix for [CVE-2015-0298](https://access.redhat.com/security/cve/CVE-2015-0298) and more!
+    docker exec -i -t mod_cluster-app1 bash
